@@ -1,0 +1,24 @@
+BPSK  : 130 vectors  (21s elapsed)
+QPSK  : 130 vectors  (54s elapsed)
+8PSK  : 130 vectors  (84s elapsed)
+16QAM : 130 vectors  (119s elapsed)
+64QAM : 130 vectors  (158s elapsed)
+GFSK  : 130 vectors  (174s elapsed)
+2FSK  : 130 vectors  (188s elapsed)
+AM    : 130 vectors  (193s elapsed)
+FM    : 130 vectors  (200s elapsed)
+
+held-out accuracy: 0.695 on 351 vectors
+confusion matrix (rows = truth, cols = prediction)
+         16QAM   2FSK  64QAM   8PSK     AM   BPSK     FM   GFSK   QPSK
+  16QAM     20      0     12      0      0      6      0      1      0
+   2FSK      0     32      0      0      0      1      0      6      0
+  64QAM     11      0     23      0      0      2      0      0      3
+   8PSK      3      0      3     25      0      3      0      0      5
+     AM      0      0      0      0     39      0      0      0      0
+   BPSK      6      0      2      0      0     30      0      1      0
+     FM      0      0      0      0      3      0     36      0      0
+   GFSK      0     11      0      0      0      0      0     28      0
+   QPSK     10      1      2     13      0      2      0      0     11
+
+model written to ml/models/modclass.joblib

@@ -1,0 +1,84 @@
+{
+ "root": "/Users/airm2/Downloads/workspace-01a0ebe1-02e5-78e3-a840-29a846a7bf8d/docs",
+ "generated": "2026-09-30T11:13:44",
+ "count": 8,
+ "documents": [
+  {
+   "name": "01_overview",
+   "file": "01_overview.md",
+   "id": "01_overview",
+   "title": "Overview",
+   "summary": "What the platform is, how it maps to SIH26147, and how to run it in one command",
+   "size_bytes": 7423,
+   "modified": "1980-01-02T00:00:00"
+  },
+  {
+   "name": "02_architecture",
+   "file": "02_architecture.md",
+   "id": "02_architecture",
+   "title": "Architecture",
+   "summary": "Component diagram, request flow, module map, storage model and performance strategy",
+   "size_bytes": 10109,
+   "modified": "1980-01-02T00:00:00"
+  },
+  {
+   "name": "03_pipeline",
+   "file": "03_pipeline.md",
+   "id": "03_pipeline",
+   "title": "Analysis pipeline",
+   "summary": "Stage-by-stage explanation of the blind analysis pipeline, the evidence graph and the confidence system",
+   "size_bytes": 7339,
+   "modified": "1980-01-02T00:00:00"
+  },
+  {
+   "name": "04_api_reference",
+   "file": "04_api_reference.md",
+   "id": "04_api_reference",
+   "title": "API reference",
+   "summary": "Complete REST reference generated from the running OpenAPI schema",
+   "size_bytes": 8128,
+   "modified": "1980-01-02T00:00:00"
+  },
+  {
+   "name": "05_database_schema",
+   "file": "05_database_schema.md",
+   "id": "05_database_schema",
+   "title": "Database schema",
+   "summary": "Relational schema - which measured value is stored where, and what is deliberately not stored",
+   "size_bytes": 11730,
+   "modified": "1980-01-02T00:00:00"
+  },
+  {
+   "name": "06_methods",
+   "file": "06_methods.md",
+   "id": "06_methods",
+   "title": "Methods",
+   "summary": "How each estimator works, which tests back every claim, and where the thresholds come from",
+   "size_bytes": 12099,
+   "modified": "1980-01-02T00:00:00"
+  },
+  {
+   "name": "08_limitations",
+   "file": "08_limitations.md",
+   "id": "08_limitations",
+   "title": "Limitations and future research",
+   "summary": "Known limitations, honest uncertainty policy and future research directions",
+   "size_bytes": 6042,
+   "modified": "1980-01-02T00:00:00"
+  },
+  {
+   "name": "09_sih_demo",
+   "file": "09_sih_demo.md",
+   "id": "09_sih_demo",
+   "title": "The judge script (SIH DEMO MODE)",
+   "summary": "The exact click-path and expected output for a live judge demonstration",
+   "size_bytes": 5742,
+   "modified": "1980-01-02T00:00:00"
+  }
+ ],
+ "note": "generated from the markdown files in this folder at API start-up; the documents are the source of truth, this index only lists them",
+ "read_by": {
+  "ui": "/documentation/index.json",
+  "api": "/api/docs"
+ }
+}

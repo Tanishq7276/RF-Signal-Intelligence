@@ -1,0 +1,20 @@
+# Never ship these into the image: local state, caches and editor/OS noise.
+data/
+.git/
+.gitignore
+.venv/
+venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+node_modules/
+frontend/node_modules/
+frontend/dist/          # rebuilt inside the image (stage 1), never copied from the host
+docs/index.json         # regenerated at start-up from the markdown files
+*.log
+Dockerfile
+docker-compose.yml
+.env

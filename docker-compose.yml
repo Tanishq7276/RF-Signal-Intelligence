@@ -1,0 +1,79 @@
+# docker-compose.yml — SIH26147 RF Signal Intelligence Platform
+#
+#   docker compose up --build                 # API + UI on http://localhost:8000 (SQLite volume)
+#   cp .env.example .env && docker compose --profile postgres up   # same, but on PostgreSQL
+#
+# With the postgres profile the API waits for the database (healthcheck) and uses the URL from
+# .env (SIH_DATABASE_URL=postgresql+psycopg://...), because the application code is identical for
+# both engines - only the URL changes.
+#
+# The platform is a single service by design: FastAPI serves the REST API *and* the built
+# React front-end from one origin, so there is no CORS configuration and no reverse proxy to
+# debug.  The PostgreSQL variant is provided because the problem statement allows SQLite *or*
+# PostgreSQL; the application code is identical, only SIH_DATABASE_URL changes.
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: sih26147-rf-platform:latest
+    container_name: sih26147-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # --- storage -------------------------------------------------------------------------
+      SIH_DATA_DIR: /app/data
+      SIH_DOCS_DIR: /app/docs
+      SIH_FRONTEND_DIST: /app/frontend/dist
+      # SQLite (default).  Add --profile postgres and this is overridden below to PostgreSQL.
+      SIH_DATABASE_URL: ${SIH_DATABASE_URL:-sqlite:////app/data/app.db}
+      # --- limits and workers --------------------------------------------------------------
+      SIH_JOB_WORKERS: ${SIH_JOB_WORKERS:-2}
+      SIH_MAX_UPLOAD_BYTES: ${SIH_MAX_UPLOAD_BYTES:-268435456}   # 256 MiB per upload
+      SIH_MAX_SAMPLES_ANALYSE: ${SIH_MAX_SAMPLES_ANALYSE:-12000000}
+      SIH_CORS_ORIGINS: ${SIH_CORS_ORIGINS:-http://localhost:8000}
+    volumes:
+      - sih-data:/app/data            # uploads, analysis cache, generated signals, reports, app.db
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    # DSP analysis of a large capture is CPU-bound; give the container headroom when needed.
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 3g
+    depends_on:
+      db:
+        condition: service_healthy
+        required: false          # only waits when the postgres profile is enabled
+
+  # ------------------------------------------------------------------------------------------
+  # Optional PostgreSQL.  Enable with:  docker compose --profile postgres up
+  # The API service then uses it automatically (see the SIH_DATABASE_URL override below).
+  # ------------------------------------------------------------------------------------------
+  db:
+    profiles: ["postgres"]
+    image: postgres:16-alpine
+    container_name: sih26147-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sih26147}
+      POSTGRES_USER: ${POSTGRES_USER:-sih}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sih}
+    volumes:
+      - sih-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sih} -d ${POSTGRES_DB:-sih26147}"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+volumes:
+  sih-data:
+  sih-pg:

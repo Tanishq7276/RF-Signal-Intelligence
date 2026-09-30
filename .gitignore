@@ -1,0 +1,32 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+node_modules/
+frontend/dist/
+data/
+ml/models/*.joblib
+.pytest_cache/
+.DS_Store
+*.log
+
+# Sensitive information & credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.pfx
+*.pkcs12
+id_rsa*
+*.secret
+*.token
+credentials.json
+client_secrets.json
+
+# Scratch diagnostics
+tmp_*.py
+scratch/
+

@@ -1,0 +1,177 @@
+[
+ {
+  "file": "sample_bpsk.wav",
+  "size_bytes": 202796,
+  "ground_truth": {
+   "modulation": "BPSK",
+   "fs": 200000.0,
+   "symbol_rate": 25000.0,
+   "snr_db": 22.0,
+   "carrier_offset_hz": 3500.0,
+   "rolloff": 0.35,
+   "fec": "none",
+   "interleaver": "none",
+   "generator_seed": 101,
+   "samples_per_symbol": 8,
+   "symbol_rate_requested": 25000.0,
+   "payload_bits": 6336,
+   "payload_text": "SIH26147 BPSK TELEMETRY FRAME 001",
+   "n_coded_bits": 6336,
+   "n_symbols": 6336,
+   "bandwidth_hz": 33750.0,
+   "duration_s": 0.25344,
+   "peak_amplitude": 0.9
+  }
+ },
+ {
+  "file": "sample_qpsk.wav",
+  "size_bytes": 206572,
+  "ground_truth": {
+   "modulation": "QPSK",
+   "fs": 200000.0,
+   "symbol_rate": 25000.0,
+   "snr_db": 20.0,
+   "carrier_offset_hz": 4000.0,
+   "rolloff": 0.35,
+   "fec": "conv_K7_r1_2",
+   "interleaver": "none",
+   "generator_seed": 102,
+   "samples_per_symbol": 8,
+   "symbol_rate_requested": 25000.0,
+   "payload_bits": 6448,
+   "payload_text": "SIH26147 QPSK PAYLOAD CHANNEL A",
+   "fec_code": {
+    "k": 1,
+    "n": 2,
+    "K": 7,
+    "polys": [
+     121,
+     91
+    ],
+    "rate": 0.5
+   },
+   "n_coded_bits": 12908,
+   "n_symbols": 6454,
+   "bandwidth_hz": 33750.0,
+   "duration_s": 0.25816,
+   "peak_amplitude": 0.8999999999999999
+  }
+ },
+ {
+  "file": "sample_8psk.wav",
+  "size_bytes": 194348,
+  "ground_truth": {
+   "modulation": "8PSK",
+   "fs": 200000.0,
+   "symbol_rate": 25000.0,
+   "snr_db": 26.0,
+   "carrier_offset_hz": -3000.0,
+   "rolloff": 0.35,
+   "fec": "none",
+   "interleaver": "none",
+   "generator_seed": 103,
+   "samples_per_symbol": 8,
+   "symbol_rate_requested": 25000.0,
+   "payload_bits": 18216,
+   "payload_text": "SIH26147 8PSK LINK TEST",
+   "n_coded_bits": 18216,
+   "n_symbols": 6072,
+   "bandwidth_hz": 33750.0,
+   "duration_s": 0.24288,
+   "peak_amplitude": 0.9000000000000001
+  }
+ },
+ {
+  "file": "sample_fsk.wav",
+  "size_bytes": 204844,
+  "ground_truth": {
+   "modulation": "2FSK",
+   "fs": 200000.0,
+   "symbol_rate": 25000.0,
+   "snr_db": 20.0,
+   "carrier_offset_hz": 2000.0,
+   "rolloff": 0.35,
+   "fec": "none",
+   "interleaver": "none",
+   "generator_seed": 104,
+   "samples_per_symbol": 8,
+   "symbol_rate_requested": 25000.0,
+   "payload_bits": 6400,
+   "payload_text": "SIH26147 FSK SENSOR BURST",
+   "n_coded_bits": 6400,
+   "fsk_mod_index": 0.5,
+   "fsk_deviation_hz": 6250.0,
+   "bandwidth_hz": 37500.0,
+   "duration_s": 0.256,
+   "peak_amplitude": 0.9
+  }
+ },
+ {
+  "file": "sample_16qam.wav",
+  "size_bytes": 197196,
+  "ground_truth": {
+   "modulation": "16QAM",
+   "fs": 200000.0,
+   "symbol_rate": 25000.0,
+   "snr_db": 26.0,
+   "carrier_offset_hz": 3000.0,
+   "rolloff": 0.3,
+   "fec": "conv_K3_r1_2",
+   "interleaver": "none",
+   "generator_seed": 105,
+   "samples_per_symbol": 8,
+   "symbol_rate_requested": 25000.0,
+   "payload_bits": 12320,
+   "payload_text": "SIH26147 QAM BROADBAND BLOCK",
+   "fec_code": {
+    "k": 1,
+    "n": 2,
+    "K": 3,
+    "polys": [
+     7,
+     5
+    ],
+    "rate": 0.5
+   },
+   "n_coded_bits": 24644,
+   "n_symbols": 6161,
+   "bandwidth_hz": 32500.0,
+   "duration_s": 0.24644,
+   "peak_amplitude": 0.9
+  }
+ },
+ {
+  "file": "sample_noisy_qpsk.wav",
+  "size_bytes": 199148,
+  "ground_truth": {
+   "modulation": "QPSK",
+   "fs": 200000.0,
+   "symbol_rate": 25000.0,
+   "snr_db": 6.0,
+   "carrier_offset_hz": 4000.0,
+   "rolloff": 0.35,
+   "fec": "conv_K7_r1_2",
+   "interleaver": "none",
+   "generator_seed": 106,
+   "samples_per_symbol": 8,
+   "symbol_rate_requested": 25000.0,
+   "payload_bits": 6216,
+   "payload_text": "SIH26147 LOW SNR CASE",
+   "fec_code": {
+    "k": 1,
+    "n": 2,
+    "K": 7,
+    "polys": [
+     121,
+     91
+    ],
+    "rate": 0.5
+   },
+   "n_coded_bits": 12444,
+   "n_symbols": 6222,
+   "bandwidth_hz": 33750.0,
+   "duration_s": 0.24888,
+   "peak_amplitude": 0.8999999999999999
+  }
+ }
+]
