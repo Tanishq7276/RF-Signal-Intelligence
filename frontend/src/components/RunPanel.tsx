@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Api } from "../lib/api";
+import { Api, getApiBase, getEnvApiUrl } from "../lib/api";
 import { bytes, si } from "../lib/format";
 import { useStore } from "../lib/store";
 import { Alert, Badge, Card, Empty, KV, NumField, Select } from "./ui";
@@ -81,8 +81,11 @@ export default function RunPanel({ blind = false, options, setOptions, fileId, s
       right={<button className="tiny ghost" onClick={refresh}>refresh files</button>}
     >
       {isBackendOffline && (
-        <Alert kind="warn" title="Backend API not connected">
-          The DSP analysis engine is currently unreachable from this browser session. To upload and analyze recordings, please configure your backend URL in <Link to="/settings" style={{ color: "#7cb3ff", fontWeight: "bold" }}>Settings → Backend API Server Connection</Link>.
+        <Alert kind="warn" title={getEnvApiUrl() || getApiBase() ? "Backend API not reachable" : "Production backend URL is not configured"}>
+          {getEnvApiUrl() || getApiBase()
+            ? `The DSP analysis engine at ${getApiBase()} is currently unreachable. Check your backend status or configure the backend URL in `
+            : "Production backend URL is not configured. Please set NEXT_PUBLIC_API_BASE_URL or VITE_API_URL in your deployment, or connect in "}
+          <Link to="/settings" style={{ color: "#7cb3ff", fontWeight: "bold" }}>Settings → Backend API Server Connection</Link>.
         </Alert>
       )}
 

@@ -128,8 +128,16 @@ export default function Settings() {
           </div>
         )}
 
+        {!activeApiUrl && (
+          <div style={{ marginTop: 10 }}>
+            <Alert kind="warn" title="Production backend URL is not configured">
+              No backend API URL is configured in the environment (<code>NEXT_PUBLIC_API_BASE_URL</code> or <code>VITE_API_URL</code>) or saved locally. The application will not silently fall back to an obsolete tunnel or localhost. Please configure your permanent backend URL above or in your hosting environment.
+            </Alert>
+          </div>
+        )}
+
         <div className="small muted" style={{ marginTop: 12 }}>
-          💡 <b>Note on ephemeral tunnels:</b> Quick tunnels (such as temporary <code>trycloudflare.com</code> or <code>localhost.run</code>) expire automatically. For production, set <code>NEXT_PUBLIC_API_BASE_URL</code> or <code>VITE_API_URL</code> on your host (e.g. Vercel) pointing to your permanent backend domain (e.g. <code>https://api.yourdomain.com</code> or Render).
+          💡 <b>Permanent production architecture:</b> In production, the backend runs on a permanent cloud host (e.g. Render or persistent Cloudflare Named Tunnel) at a stable URL. Do not use ephemeral quick tunnels.
         </div>
       </Card>
 
