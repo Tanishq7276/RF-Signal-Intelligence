@@ -13,8 +13,10 @@ ml/models/*.joblib
 
 # Sensitive information & credentials
 .env
-.env.*
+.env.local
+.env.*.local
 !.env.example
+!**/.env.example
 *.pem
 *.key
 *.cert
@@ -31,4 +33,3 @@ tmp_*.py
 scratch/
 
 .vercel
-.env*
