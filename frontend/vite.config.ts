@@ -5,6 +5,7 @@ import react from "@vitejs/plugin-react";
 // `npm run dev` proxies the API so the developer experience matches production.
 export default defineConfig({
   plugins: [react()],
+  envPrefix: ["VITE_", "NEXT_PUBLIC_"],
   server: {
     host: "0.0.0.0",
     port: 5173,

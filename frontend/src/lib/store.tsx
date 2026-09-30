@@ -34,15 +34,30 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshHealth = useCallback(async () => {
-    try { setHealth(await Api.health()); } catch (e: any) { setHealth({ status: "unreachable", error: String(e?.message || e) }); }
+    try {
+      const h = await Api.health(8000);
+      setHealth({
+        ...h,
+        lastChecked: new Date().toISOString(),
+        error: null,
+      });
+    } catch (e: any) {
+      setHealth({
+        status: "unreachable",
+        lastChecked: new Date().toISOString(),
+        error: String(e?.message || e),
+      });
+    }
   }, []);
 
   const refresh = useCallback(async () => {
     try {
       const [f, a, d] = await Promise.all([Api.listFiles(), Api.analyses({ limit: 200 }), Api.demos()]);
       setFiles(f.files || []); setAnalyses(a.analyses || []); setDemos(d.demo_signals || []);
-    } catch (e: any) { toast(`could not load the workspace: ${e.message}`, "err"); }
-  }, [toast]);
+    } catch (e: any) {
+      // Avoid spamming error toast if already logged or backend offline
+    }
+  }, []);
 
   useEffect(() => { refreshHealth(); refresh(); }, [refresh, refreshHealth]);
 

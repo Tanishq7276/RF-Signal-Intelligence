@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Api, getApiBase, setApiBase } from "../lib/api";
-import { num } from "../lib/format";
+import { Api, getApiBase, getEnvApiUrl, normalizeApiUrl, setApiBase } from "../lib/api";
+import { num, relTime } from "../lib/format";
 import { useStore } from "../lib/store";
-import { Alert, Card, Empty, Json, KV, Spinner } from "../components/ui";
+import { Alert, Badge, Card, Empty, Json, KV, Spinner, Stat } from "../components/ui";
 
 export default function Settings() {
   const { health, refreshHealth, refresh, toast } = useStore();
@@ -10,7 +10,9 @@ export default function Settings() {
   const [models, setModels] = useState<any>(null);
   const [caps, setCaps] = useState<any>(null);
   const [busy, setBusy] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [apiUrlInput, setApiUrlInput] = useState(getApiBase());
+  const [connectResult, setConnectResult] = useState<{ status: "idle" | "connected" | "disconnected"; message?: string } | null>(null);
 
   useEffect(() => {
     Api.settings().then(setCfg).catch((e) => toast(e.message, "err"));
@@ -19,38 +21,123 @@ export default function Settings() {
   }, [toast]);
 
   const handleSaveApiUrl = async () => {
-    setApiBase(apiUrlInput);
-    toast("Backend API URL saved. Re-connecting...", "info");
+    const normalized = normalizeApiUrl(apiUrlInput);
+    setApiUrlInput(normalized);
+    setTesting(true);
+    setConnectResult(null);
+
+    // Perform explicit health check before committing
+    const check = await Api.checkHealthAt(normalized);
+    setTesting(false);
+
+    if (check.ok) {
+      setApiBase(normalized);
+      setConnectResult({ status: "connected", message: `Connected to ${normalized || "same-origin / relative"} (version ${check.data?.version || "1.0.0"})` });
+      toast("Backend connected successfully", "ok", "API Connection");
+      await refreshHealth();
+      await refresh();
+    } else {
+      setConnectResult({ status: "disconnected", message: check.error || "Connection failed" });
+      toast(`Connection failed: ${check.error}`, "err", "API Connection");
+    }
+  };
+
+  const handleResetToDefault = async () => {
+    setApiBase(null);
+    const envDefault = getEnvApiUrl();
+    setApiUrlInput(envDefault);
+    setConnectResult(null);
+    toast("Reset to environment default API URL", "info", "API Connection");
     await refreshHealth();
     await refresh();
   };
 
+  const activeApiUrl = getApiBase();
+  const envDefaultUrl = getEnvApiUrl();
+  const isCustom = typeof window !== "undefined" && !!localStorage.getItem("sih26147-api-url");
+
   return (
     <div>
-      <Card title="Backend API Server Connection" sub="Configure which backend endpoint this Vercel web application connects to for DSP analysis and processing.">
+      <Card
+        title="Backend API Server Connection"
+        sub="Configure which backend endpoint this web application connects to for DSP analysis and processing."
+        right={
+          health?.status === "ok" ? (
+            <Badge kind="ok">● Connected</Badge>
+          ) : (
+            <Badge kind="bad">○ Disconnected</Badge>
+          )
+        }
+      >
         <div className="row" style={{ gap: 10, alignItems: "center" }}>
           <input
             type="text"
-            placeholder="e.g. https://rf-signal-intelligence-api.onrender.com or http://localhost:8000"
+            placeholder="e.g. https://api.yourdomain.com or https://rf-signal-intelligence-api.onrender.com"
             value={apiUrlInput}
             onChange={(e) => setApiUrlInput(e.target.value)}
+            disabled={testing}
             style={{ flex: 1, padding: "7px 12px", background: "#0b1626", border: "1px solid #1e385c", color: "#eef", borderRadius: 4 }}
           />
-          <button className="btn" onClick={handleSaveApiUrl}>Save &amp; Connect</button>
-          {apiUrlInput && (
-            <button className="tiny ghost" onClick={() => { setApiUrlInput(""); setApiBase(null); refreshHealth(); refresh(); }}>Reset to Default</button>
+          <button className="primary btn" disabled={testing} onClick={handleSaveApiUrl}>
+            {testing ? "Testing…" : "Save & Connect"}
+          </button>
+          {isCustom && (
+            <button className="tiny ghost" disabled={testing} onClick={handleResetToDefault}>
+              Reset to Default
+            </button>
           )}
         </div>
-        <div className="small muted" style={{ marginTop: 8 }}>
-          Current API Base: <code>{getApiBase() || "(same-origin / relative)"}</code>
+
+        {connectResult && (
+          <div style={{ marginTop: 10 }}>
+            {connectResult.status === "connected" ? (
+              <Alert kind="ok" title="Connection successful">
+                {connectResult.message}
+              </Alert>
+            ) : (
+              <Alert kind="bad" title="Connection failed">
+                {connectResult.message}
+              </Alert>
+            )}
+          </div>
+        )}
+
+        <div className="grid g3" style={{ marginTop: 14 }}>
+          <Stat
+            k="Active API Base URL"
+            v={activeApiUrl || "(same-origin / relative)"}
+            n={isCustom ? "custom override stored in browser session" : "configured via environment variable"}
+          />
+          <Stat
+            k="Environment Default"
+            v={envDefaultUrl || "(none configured)"}
+            n="NEXT_PUBLIC_API_BASE_URL or VITE_API_URL"
+          />
+          <Stat
+            k="Health Status"
+            v={health?.status === "ok" ? "Healthy (200 OK)" : (health?.status || "Unreachable")}
+            n={health?.lastChecked ? `checked ${relTime(health.lastChecked)}` : "not checked"}
+          />
+        </div>
+
+        {health?.error && (
+          <div style={{ marginTop: 10 }}>
+            <Alert kind="bad" title="Connection error">
+              {health.error}
+            </Alert>
+          </div>
+        )}
+
+        <div className="small muted" style={{ marginTop: 12 }}>
+          💡 <b>Note on ephemeral tunnels:</b> Quick tunnels (such as temporary <code>trycloudflare.com</code> or <code>localhost.run</code>) expire automatically. For production, set <code>NEXT_PUBLIC_API_BASE_URL</code> or <code>VITE_API_URL</code> on your host (e.g. Vercel) pointing to your permanent backend domain (e.g. <code>https://api.yourdomain.com</code> or Render).
         </div>
       </Card>
 
-      <Card title="Environment" sub="deployment configuration (environment variables) — shown so a run can be reproduced, not silently rewritten by the UI"
+      <Card title="Environment &amp; Diagnostics" sub="deployment configuration (environment variables) — shown so a run can be reproduced, not silently rewritten by the UI"
         right={<button className="tiny ghost" onClick={refreshHealth}>re-check health</button>}>
         {health ? (
           <div className="grid g4">
-            <div className="stat"><div className="k">backend</div><div className="v">{health.status}</div><div className="n">uptime {num(health.uptime_s, 0)} s · v{health.version}</div></div>
+            <div className="stat"><div className="k">backend</div><div className="v">{health.status}</div><div className="n">uptime {num(health.uptime_s, 0)} s · v{health.version || "1.0.0"}</div></div>
             {Object.entries(health.checks || {}).map(([k, v]: any) => (
               <div className="stat" key={k}><div className="k">{k}</div><div className="v">{v.ok ? "ok" : "failed"}</div>
                 <div className="n">{Object.entries(v).filter(([kk]) => kk !== "ok").map(([kk, vv]) => `${kk}: ${String(vv)}`).join(" · ")}</div></div>

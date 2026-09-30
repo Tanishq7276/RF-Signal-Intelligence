@@ -86,13 +86,12 @@ export function Markdown({ text }: { text: string }) {
 }
 
 export async function fetchDocs(): Promise<{ index: any; markdown: Record<string, string> }> {
-  const { apiUrl } = await import("./api");
-  const idx = await fetch(apiUrl("/documentation/index.json")).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const { Api } = await import("./api");
+  const idx = await Api.docsIndex().catch(() => null);
   if (!idx?.documents?.length) return { index: null, markdown: {} };
   const md: Record<string, string> = {};
   await Promise.all(idx.documents.map(async (d: any) => {
-    const t = await fetch(apiUrl(`/documentation/${d.name}.md`)).then((r) => (r.ok ? r.text() : "")).catch(() => "");
-    md[d.name] = t;
+    md[d.name] = await Api.docMarkdown(d.name).catch(() => "");
   }));
   return { index: idx, markdown: md };
 }

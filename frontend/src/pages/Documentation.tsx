@@ -17,7 +17,7 @@ export default function Documentation() {
       setCurrent(index?.documents?.[0]?.name ?? null);
       setLoading(false);
     });
-    fetch(apiUrl("/openapi.json")).then((r) => (r.ok ? r.json() : null)).then(setOnline).catch(() => undefined);
+    Api.openapi().then(setOnline).catch(() => undefined);
   }, []);
 
   const list: any[] = docs?.documents || [];

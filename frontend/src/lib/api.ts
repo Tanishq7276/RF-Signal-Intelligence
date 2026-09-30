@@ -1,23 +1,50 @@
-/** Typed API client.  Every call goes to the FastAPI backend with the session header. */
+/** Normalize an API URL: trim, strip trailing slashes, validate protocol. */
+export const normalizeApiUrl = (url?: string | null): string => {
+  if (!url) return "";
+  const trimmed = url.trim().replace(/\/+$/, "");
+  if (!trimmed) return "";
+  return trimmed;
+};
+
+/** Get the configured environment default API URL. */
+export const getEnvApiUrl = (): string => {
+  const env = (import.meta.env?.NEXT_PUBLIC_API_BASE_URL as string | undefined)
+    || (import.meta.env?.VITE_API_BASE_URL as string | undefined)
+    || (import.meta.env?.VITE_API_URL as string | undefined);
+  return normalizeApiUrl(env);
+};
+
+/** Single source of truth for the active backend API base URL.
+ *  Priority:
+ *  1. User manual override stored in localStorage (`sih26147-api-url`)
+ *  2. Environment variable: NEXT_PUBLIC_API_BASE_URL or VITE_API_URL or VITE_API_BASE_URL
+ *  3. Fallback: "" (same-origin relative path /api)
+ */
 export const getApiBase = (): string => {
-  const custom = typeof window !== "undefined" ? localStorage.getItem("sih26147-api-url") : null;
-  if (custom && custom.trim()) return custom.trim().replace(/\/+$/, "");
-  return (import.meta.env?.VITE_API_URL as string | undefined)?.replace(/\/+$/, "") || "";
+  if (typeof window !== "undefined") {
+    const custom = localStorage.getItem("sih26147-api-url");
+    if (custom && custom.trim()) {
+      return normalizeApiUrl(custom);
+    }
+  }
+  return getEnvApiUrl();
 };
 
 export const setApiBase = (url: string | null) => {
   if (typeof window === "undefined") return;
-  if (url && url.trim()) localStorage.setItem("sih26147-api-url", url.trim().replace(/\/+$/, ""));
-  else localStorage.removeItem("sih26147-api-url");
+  const norm = normalizeApiUrl(url);
+  if (norm) {
+    localStorage.setItem("sih26147-api-url", norm);
+  } else {
+    localStorage.removeItem("sih26147-api-url");
+  }
 };
-
-export const API_BASE = getApiBase();
 
 export const apiUrl = (path: string): string => {
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
   const base = getApiBase();
-  if (!base) return path;
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  if (!base) return cleanPath;
   return `${base}${cleanPath}`;
 };
 
@@ -52,17 +79,37 @@ const headers = (): Record<string, string> => {
   return h;
 };
 
-async function req<T>(path: string, init?: RequestInit): Promise<T> {
+export type ReqOptions = RequestInit & { timeoutMs?: number };
+
+async function req<T>(path: string, init?: ReqOptions): Promise<T> {
   const url = apiUrl(path);
-  const res = await fetch(url, {
-    ...init,
-    headers: { ...headers(), ...(init?.body && !(init.body instanceof FormData) ? { "Content-Type": "application/json" } : {}), ...(init?.headers || {}) },
-  });
-  const text = await res.text();
-  let body: any = null;
-  try { body = text ? JSON.parse(text) : null; } catch { body = text; }
-  if (!res.ok) throw new ApiError(res.status, body ?? res.statusText);
-  return body as T;
+  const timeoutMs = init?.timeoutMs ?? 15000;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(url, {
+      ...init,
+      signal: init?.signal || controller.signal,
+      headers: {
+        ...headers(),
+        ...(init?.body && !(init.body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
+        ...(init?.headers || {}),
+      },
+    });
+    clearTimeout(timer);
+    const text = await res.text();
+    let body: any = null;
+    try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+    if (!res.ok) throw new ApiError(res.status, body ?? res.statusText);
+    return body as T;
+  } catch (err: any) {
+    clearTimeout(timer);
+    if (err.name === "AbortError") {
+      throw new ApiError(0, `Request timed out after ${timeoutMs / 1000}s`);
+    }
+    throw err;
+  }
 }
 
 const post = <T,>(p: string, body?: any) => req<T>(p, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
@@ -97,7 +144,41 @@ export const Api = {
   history: (params: Record<string, any> = {}) => req<any>(`/api/history${qs(params)}`),
   analysisStatus: (id: string) => req<any>(`/api/analyze/${id}/status`),
   // system
-  health: () => req<any>("/api/health"),
+  health: (timeoutMs = 8000) => req<any>("/api/health", { timeoutMs }),
+  checkHealthAt: async (baseUrl: string, timeoutMs = 8000): Promise<{ ok: boolean; data?: any; error?: string }> => {
+    const norm = normalizeApiUrl(baseUrl);
+    const targetUrl = norm ? `${norm}/api/health` : "/api/health";
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(targetUrl, {
+        headers: headers(),
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      const text = await res.text();
+      let body: any = null;
+      try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+      if (!res.ok) {
+        return { ok: false, error: `HTTP ${res.status}: ${typeof body === "string" ? body : body?.detail || res.statusText}` };
+      }
+      return { ok: true, data: body };
+    } catch (err: any) {
+      clearTimeout(timer);
+      if (err.name === "AbortError") {
+        return { ok: false, error: `Connection timed out after ${timeoutMs / 1000}s` };
+      }
+      return { ok: false, error: err.message || "Network error" };
+    }
+  },
+  openapi: () => req<any>("/openapi.json"),
+  docsIndex: () => req<any>("/documentation/index.json"),
+  docMarkdown: async (name: string) => {
+    const url = apiUrl(`/documentation/${encodeURIComponent(name)}.md`);
+    const res = await fetch(url);
+    if (!res.ok) return "";
+    return await res.text();
+  },
   capabilities: () => req<any>("/api/capabilities"),
   stats: () => req<any>("/api/stats"),
   settings: () => req<any>("/api/settings"),
