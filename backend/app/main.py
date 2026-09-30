@@ -64,9 +64,19 @@ def create_app() -> FastAPI:
             {"name": "reports", "description": "PDF / JSON / CSV / TXT exports."},
         ],
     )
-    # the UI is same-origin in production; the dev server proxies /api, so credentials are not needed
-    app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=False,
-                       allow_methods=["*"], allow_headers=["*"], expose_headers=["Content-Disposition"])
+    origins = list(settings.cors_origins)
+    if "https://rf-signal-intelligence.vercel.app" not in origins:
+        origins.append("https://rf-signal-intelligence.vercel.app")
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins if origins else ["*"],
+        allow_origin_regex=r"^https://rf-signal-intelligence.*\.vercel\.app$",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["Content-Disposition"],
+    )
 
     @app.exception_handler(RequestValidationError)
     async def _validation(request: Request, exc: RequestValidationError):

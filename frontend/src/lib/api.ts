@@ -16,18 +16,25 @@ export const getEnvApiUrl = (): string => {
 
 /** Single source of truth for the active backend API base URL.
  *  Priority:
- *  1. User manual override stored in localStorage (`sih26147-api-url`)
+ *  1. User manual override stored in localStorage (`sih26147-api-url`), if valid and non-ephemeral
  *  2. Environment variable: NEXT_PUBLIC_API_BASE_URL or VITE_API_URL or VITE_API_BASE_URL
  *  3. Fallback: "" (same-origin relative path /api)
  */
 export const getApiBase = (): string => {
+  const envUrl = getEnvApiUrl();
   if (typeof window !== "undefined") {
     const custom = localStorage.getItem("sih26147-api-url");
     if (custom && custom.trim()) {
-      return normalizeApiUrl(custom);
+      const norm = normalizeApiUrl(custom);
+      // Clean out any stale ephemeral or temporary tunnels
+      if (norm.includes("trycloudflare.com") || norm.includes("ngrok") || norm.includes("localhost.run")) {
+        localStorage.removeItem("sih26147-api-url");
+      } else {
+        return norm;
+      }
     }
   }
-  return getEnvApiUrl();
+  return envUrl;
 };
 
 export const setApiBase = (url: string | null) => {

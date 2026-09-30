@@ -101,9 +101,9 @@ export default function App() {
           <h1>{title}</h1>
           <span className="spacer" />
           <Link to="/settings" style={{ textDecoration: "none" }}>
-            <span className={`badge ${health?.status === "ok" ? "ok" : health ? "warn" : "bad"}`}
-              title={health?.status === "ok" ? "Backend connected (click to view settings)" : "Backend offline or unreachable (click to configure API URL)"}>
-              api {health?.status || "…"}
+            <span className={`badge ${health?.status === "ok" ? "ok" : "bad"}`}
+              title={health?.status === "ok" ? "Backend connected (click to view settings)" : `Backend unreachable (${health?.error || "check backend status"}) - click to configure`}>
+              {health?.status === "ok" ? "api connected" : "api unreachable"}
             </span>
           </Link>
           <span className="pill" title="files in this workspace">{files.length} file{files.length === 1 ? "" : "s"} · {done} analysis</span>
