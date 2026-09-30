@@ -6,35 +6,55 @@ export const normalizeApiUrl = (url?: string | null): string => {
   return trimmed;
 };
 
-/** Get the configured environment default API URL. */
+/** Get the configured environment default API URL.
+ *  Priority:
+ *  1. VITE_API_URL
+ *  2. VITE_API_BASE_URL
+ *  3. NEXT_PUBLIC_API_BASE_URL
+ */
 export const getEnvApiUrl = (): string => {
-  const env = (import.meta.env?.NEXT_PUBLIC_API_BASE_URL as string | undefined)
+  const env = (import.meta.env?.VITE_API_URL as string | undefined)
     || (import.meta.env?.VITE_API_BASE_URL as string | undefined)
-    || (import.meta.env?.VITE_API_URL as string | undefined);
+    || (import.meta.env?.NEXT_PUBLIC_API_BASE_URL as string | undefined);
   return normalizeApiUrl(env);
 };
 
 /** Single source of truth for the active backend API base URL.
  *  Priority:
- *  1. User manual override stored in localStorage (`sih26147-api-url`), if valid and non-ephemeral
- *  2. Environment variable: NEXT_PUBLIC_API_BASE_URL or VITE_API_URL or VITE_API_BASE_URL
- *  3. Fallback: "" (same-origin relative path /api)
+ *  1. VITE_API_URL
+ *  2. VITE_API_BASE_URL
+ *  3. NEXT_PUBLIC_API_BASE_URL
+ *  4. localStorage manual override ONLY if none of the above exists and is valid
+ *  5. Fallback: "" (empty string / same-origin relative path /api)
  */
 export const getApiBase = (): string => {
   const envUrl = getEnvApiUrl();
+  // If an environment variable is configured, it MUST ALWAYS take priority over saved localStorage
+  if (envUrl) {
+    // Purge any stale ephemeral tunnels from localStorage if present
+    if (typeof window !== "undefined") {
+      const custom = localStorage.getItem("sih26147-api-url");
+      if (custom && (custom.includes("trycloudflare.com") || custom.includes("ngrok") || custom.includes("localhost.run") || custom.includes("localhost") || custom.includes("127.0.0.1"))) {
+        localStorage.removeItem("sih26147-api-url");
+      }
+    }
+    return envUrl;
+  }
+
+  // Fallback to manual localStorage override only if no env variable is set
   if (typeof window !== "undefined") {
     const custom = localStorage.getItem("sih26147-api-url");
     if (custom && custom.trim()) {
       const norm = normalizeApiUrl(custom);
       // Clean out any stale ephemeral or temporary tunnels
-      if (norm.includes("trycloudflare.com") || norm.includes("ngrok") || norm.includes("localhost.run")) {
+      if (norm.includes("trycloudflare.com") || norm.includes("ngrok") || norm.includes("localhost.run") || norm.includes("localhost") || norm.includes("127.0.0.1")) {
         localStorage.removeItem("sih26147-api-url");
       } else {
         return norm;
       }
     }
   }
-  return envUrl;
+  return "";
 };
 
 export const setApiBase = (url: string | null) => {
