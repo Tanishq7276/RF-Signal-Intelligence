@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
-import { Api } from "../lib/api";
+import { Api, getApiBase, setApiBase } from "../lib/api";
 import { num } from "../lib/format";
 import { useStore } from "../lib/store";
 import { Alert, Card, Empty, Json, KV, Spinner } from "../components/ui";
 
 export default function Settings() {
-  const { health, refreshHealth, toast } = useStore();
+  const { health, refreshHealth, refresh, toast } = useStore();
   const [cfg, setCfg] = useState<any>(null);
   const [models, setModels] = useState<any>(null);
   const [caps, setCaps] = useState<any>(null);
   const [busy, setBusy] = useState(false);
+  const [apiUrlInput, setApiUrlInput] = useState(getApiBase());
 
   useEffect(() => {
     Api.settings().then(setCfg).catch((e) => toast(e.message, "err"));
@@ -17,8 +18,34 @@ export default function Settings() {
     Api.capabilities().then(setCaps).catch(() => undefined);
   }, [toast]);
 
+  const handleSaveApiUrl = async () => {
+    setApiBase(apiUrlInput);
+    toast("Backend API URL saved. Re-connecting...", "info");
+    await refreshHealth();
+    await refresh();
+  };
+
   return (
     <div>
+      <Card title="Backend API Server Connection" sub="Configure which backend endpoint this Vercel web application connects to for DSP analysis and processing.">
+        <div className="row" style={{ gap: 10, alignItems: "center" }}>
+          <input
+            type="text"
+            placeholder="e.g. https://rf-signal-intelligence-api.onrender.com or http://localhost:8000"
+            value={apiUrlInput}
+            onChange={(e) => setApiUrlInput(e.target.value)}
+            style={{ flex: 1, padding: "7px 12px", background: "#0b1626", border: "1px solid #1e385c", color: "#eef", borderRadius: 4 }}
+          />
+          <button className="btn" onClick={handleSaveApiUrl}>Save &amp; Connect</button>
+          {apiUrlInput && (
+            <button className="tiny ghost" onClick={() => { setApiUrlInput(""); setApiBase(null); refreshHealth(); refresh(); }}>Reset to Default</button>
+          )}
+        </div>
+        <div className="small muted" style={{ marginTop: 8 }}>
+          Current API Base: <code>{getApiBase() || "(same-origin / relative)"}</code>
+        </div>
+      </Card>
+
       <Card title="Environment" sub="deployment configuration (environment variables) — shown so a run can be reproduced, not silently rewritten by the UI"
         right={<button className="tiny ghost" onClick={refreshHealth}>re-check health</button>}>
         {health ? (

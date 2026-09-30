@@ -100,9 +100,12 @@ export default function App() {
           <button className="tiny ghost" style={{ display: "none" }} />
           <h1>{title}</h1>
           <span className="spacer" />
-          <span className={`badge ${health?.status === "ok" ? "ok" : health ? "warn" : "bad"}`} title={health?.error || ""}>
-            api {health?.status || "…"}
-          </span>
+          <Link to="/settings" style={{ textDecoration: "none" }}>
+            <span className={`badge ${health?.status === "ok" ? "ok" : health ? "warn" : "bad"}`}
+              title={health?.status === "ok" ? "Backend connected (click to view settings)" : "Backend offline or unreachable (click to configure API URL)"}>
+              api {health?.status || "…"}
+            </span>
+          </Link>
           <span className="pill" title="files in this workspace">{files.length} file{files.length === 1 ? "" : "s"} · {done} analysis</span>
           {running && <span className="pill" title={job.message}>{num((job.progress || 0) * 100, 0)} % · {job.kind || "job"}</span>}
           {currentId && <Link className="btn tiny" to={`/analyze/${currentId}`}>current analysis</Link>}

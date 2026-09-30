@@ -1,11 +1,24 @@
 /** Typed API client.  Every call goes to the FastAPI backend with the session header. */
-export const API_BASE = (import.meta.env?.VITE_API_URL as string | undefined)?.replace(/\/+$/, "") || "";
+export const getApiBase = (): string => {
+  const custom = typeof window !== "undefined" ? localStorage.getItem("sih26147-api-url") : null;
+  if (custom && custom.trim()) return custom.trim().replace(/\/+$/, "");
+  return (import.meta.env?.VITE_API_URL as string | undefined)?.replace(/\/+$/, "") || "";
+};
+
+export const setApiBase = (url: string | null) => {
+  if (typeof window === "undefined") return;
+  if (url && url.trim()) localStorage.setItem("sih26147-api-url", url.trim().replace(/\/+$/, ""));
+  else localStorage.removeItem("sih26147-api-url");
+};
+
+export const API_BASE = getApiBase();
 
 export const apiUrl = (path: string): string => {
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  if (!API_BASE) return path;
+  const base = getApiBase();
+  if (!base) return path;
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  return `${API_BASE}${cleanPath}`;
+  return `${base}${cleanPath}`;
 };
 
 export const SESSION_KEY = (() => {
