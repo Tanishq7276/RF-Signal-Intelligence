@@ -87,20 +87,68 @@ export const StageList = ({ stages, title }: { stages: any[]; title?: string }) 
 
 /* ------------------------------------------------------------------ hypotheses */
 export const HypothesisList = ({ hypotheses, kind }: { hypotheses: any[]; kind: "fec" | "interleave" | "modulation" | "generic" }) => {
-  if (!hypotheses?.length) return <Empty>No hypothesis could be formed for this record.</Empty>;
+  if (!hypotheses?.length) {
+    if (kind === "interleave") return <Empty>No interleaver geometry identified</Empty>;
+    if (kind === "fec") return <Empty>No FEC identified above evidence threshold</Empty>;
+    return <Empty>No hypothesis could be formed for this record.</Empty>;
+  }
   return (
     <div className="col">
       {hypotheses.map((h, i) => {
         const conf = h.confidence ?? h.probability ?? 0;
+        const fam = (h.family || "").toLowerCase();
+        const isLdpc = fam === "ldpc" || (h.hypothesis || "").toLowerCase().includes("ldpc");
+        const isUnable = h.status === "unable";
+
+        // Determine clear user-facing status label & badge kind
+        let statusLabel = h.status;
+        let badgeKind = "info";
+
+        if (h.status === "ok") {
+          statusLabel = "Confirmed hypothesis";
+          badgeKind = "ok";
+        } else if (h.status === "low_confidence" || (conf > 0 && conf < 0.20)) {
+          statusLabel = "Low confidence hypothesis";
+          badgeKind = "warn";
+        } else if (isUnable) {
+          if (kind === "fec") {
+            if (isLdpc) {
+              statusLabel = "LDPC not identifiable blindly";
+              badgeKind = "info";
+            } else if (fam === "convolutional" || fam === "reed-solomon") {
+              statusLabel = "Not enough evidence";
+              badgeKind = "info";
+            } else {
+              statusLabel = "No evidence above threshold";
+              badgeKind = "info";
+            }
+          } else if (kind === "interleave") {
+            statusLabel = "No geometry beat control";
+            badgeKind = "info";
+          } else {
+            statusLabel = "Insufficient evidence";
+            badgeKind = "info";
+          }
+        } else if (!h.status) {
+          statusLabel = conf >= 0.20 ? "Hypothesis" : "Tested candidate";
+          badgeKind = conf >= 0.6 ? "ok" : conf >= 0.20 ? "warn" : "info";
+        }
+
+        // Specific explanation for LDPC if not already specified
+        let extraExplanation = h.explanation;
+        if (isLdpc && (!extraExplanation || !extraExplanation.includes("parity-check matrix"))) {
+          extraExplanation = "A parity-check matrix is required for a reliable LDPC identification.";
+        }
+
         return (
           <div key={i} className="card" style={{ margin: 0, padding: 12 }}>
-            <div className="row" style={{ gap: 10 }}>
-              <Badge kind={conf >= 0.6 ? "ok" : conf >= 0.25 ? "warn" : "bad"}>
+            <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
+              <Badge kind={conf >= 0.6 ? "ok" : conf >= 0.20 ? "warn" : "info"}>
                 {kind === "modulation" ? (h.modulation || h.label) : (h.hypothesis || h.kind || "—")}
               </Badge>
               {h.rank && <span className="pill">rank {h.rank}</span>}
               {h.family && <span className="pill">{h.family}</span>}
-              {h.status && <Badge kind={h.status === "ok" ? "ok" : h.status === "unable" ? "bad" : "warn"}>{h.status}</Badge>}
+              {statusLabel && <Badge kind={badgeKind}>{statusLabel}</Badge>}
               {h.rank_excluded && <span className="pill" title="this test measures channel memory, not a permutation, so it is excluded from the ranking">indication only</span>}
               <span style={{ flex: 1 }} />
               <div style={{ minWidth: 150 }}>
@@ -108,7 +156,7 @@ export const HypothesisList = ({ hypotheses, kind }: { hypotheses: any[]; kind: 
                   <span className="small muted">confidence</span>
                   <span className="mono small">{conf.toFixed ? conf.toFixed(2) : num(conf, 2)}</span>
                 </div>
-                <Bar value={conf} />
+                <Bar value={conf} tone={conf >= 0.6 ? "ok" : conf >= 0.20 ? "warn" : undefined} />
               </div>
             </div>
             {(h.evidence || []).length > 0 && (
@@ -121,7 +169,7 @@ export const HypothesisList = ({ hypotheses, kind }: { hypotheses: any[]; kind: 
                 Limitations: {h.limitations.join(" · ")}
               </div>
             )}
-            {h.explanation && <div className="small muted" style={{ marginTop: 6 }}>{h.explanation}</div>}
+            {extraExplanation && <div className="small muted" style={{ marginTop: 6 }}>{extraExplanation}</div>}
             {h.relative_improvement !== undefined && h.relative_improvement !== null && (
               <div className="small mono" style={{ marginTop: 6 }}>
                 relative decode improvement {num(h.relative_improvement, 3)}

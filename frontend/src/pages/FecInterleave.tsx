@@ -53,33 +53,83 @@ export default function FecInterleave() {
       </Card>
 
       <div className="grid g2">
-        <Card title="FEC hypotheses" sub={fec?.policy || (current?.result?.signal?.fec?.policy) || "a code is only claimed when its evidence beats the random-data null"}>
+        <Card title="FEC hypotheses"
+          right={fec ? <Badge kind="ok">✓ FEC test completed</Badge> : undefined}
+          sub={fec?.policy || (current?.result?.signal?.fec?.policy) || "a code is only claimed when its evidence beats the random-data null"}>
           {fec ? (
             <>
               <div className="grid g3">
-                <Stat k="leader" v={fec.best?.hypothesis || "none claimed"} n={fec.best ? `confidence ${num(fec.best.confidence, 3)}` : "below the 0.20 reporting threshold"} />
-                <Stat k="bits tested" v={num(fec.n_bits_tested, 0)} n={fec.bit_source?.source} />
-                <Stat k="families tested" v={new Set((fec.hypotheses || []).map((h: any) => h.family)).size} n="convolutional, Reed-Solomon, concatenated, LDPC" />
+                <Stat
+                  k="FEC RESULT"
+                  v={fec.best?.hypothesis ? fec.best.hypothesis : "No FEC identified"}
+                  n={fec.best ? `Confirmed hypothesis` : "No evidence above threshold"}
+                />
+                <Stat
+                  k="Confidence"
+                  v={fec.best ? num(fec.best.confidence, 3) : "Below reporting threshold"}
+                  n={fec.best ? `beats random-data null` : "tested against random-data null"}
+                />
+                <Stat
+                  k="FAMILIES TESTED"
+                  v={new Set((fec.hypotheses || []).map((h: any) => h.family)).size || 3}
+                  n="convolutional, Reed-Solomon, concatenated, LDPC"
+                />
               </div>
               <div className="hr" />
+              <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
+                <span className="small muted">Tested hypotheses ({fec.hypotheses?.length || 0})</span>
+                <span className="small muted">bits tested: {num(fec.n_bits_tested, 0)} ({fec.bit_source?.source || "demod"})</span>
+              </div>
               <HypothesisList kind="fec" hypotheses={fec.hypotheses || []} />
               {(fec.notes || []).map((n: string, i: number) => <Alert key={i} kind="info">{n}</Alert>)}
             </>
-          ) : <Empty>Run the FEC test to see the ranked hypotheses with their evidence.</Empty>}
+          ) : (
+            <div className="col" style={{ gap: 10, alignItems: "center", padding: "16px 0" }}>
+              <Empty>Test not run</Empty>
+              <button className="primary tiny" disabled={!analysisId || busy !== null} onClick={runFec}>
+                {busy === "fec" ? "testing…" : "test FEC hypotheses"}
+              </button>
+            </div>
+          )}
         </Card>
-        <Card title="Interleaver hypotheses" sub={inter?.policy || (current?.result?.signal?.interleaving?.policy) || "geometry is only claimed when de-interleaving beats a random-permutation control"}>
+        <Card title="Interleaver hypotheses"
+          right={inter ? <Badge kind="ok">✓ Interleaver test completed</Badge> : undefined}
+          sub={inter?.policy || (current?.result?.signal?.interleaving?.policy) || "geometry is only claimed when de-interleaving beats a random-permutation control"}>
           {inter ? (
             <>
               <div className="grid g3">
-                <Stat k="leader" v={inter.best?.hypothesis || "none claimed"} n={inter.best ? `confidence ${num(inter.best.confidence, 3)}` : "no geometry beat the control group"} />
-                <Stat k="bits tested" v={num(inter.n_bits_tested, 0)} n={inter.bit_source?.source} />
-                <Stat k="cluster test" v={inter.cluster_test?.ok ? num(inter.cluster_test.z_score, 2) : "n/a"} n={inter.cluster_test?.interpretation || "measures channel memory, not a permutation"} />
+                <Stat
+                  k="INTERLEAVER RESULT"
+                  v={inter.best?.hypothesis ? inter.best.hypothesis : "No interleaver geometry identified"}
+                  n={inter.best ? `Confirmed geometry` : "no geometry beat the control group"}
+                />
+                <Stat
+                  k="Confidence"
+                  v={inter.best ? num(inter.best.confidence, 3) : "Below reporting threshold"}
+                  n={inter.best ? `beats control group` : "evaluated against random permutations"}
+                />
+                <Stat
+                  k="cluster test"
+                  v={inter.cluster_test?.ok ? num(inter.cluster_test.z_score, 2) : "n/a"}
+                  n={inter.cluster_test?.interpretation || "measures channel memory, not a permutation"}
+                />
               </div>
               <div className="hr" />
+              <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
+                <span className="small muted">Tested geometries ({inter.hypotheses?.length || 0})</span>
+                <span className="small muted">bits tested: {num(inter.n_bits_tested, 0)} ({inter.bit_source?.source || "demod"})</span>
+              </div>
               <HypothesisList kind="interleave" hypotheses={inter.hypotheses || []} />
               {(inter.notes || []).map((n: string, i: number) => <Alert key={i} kind="info">{n}</Alert>)}
             </>
-          ) : <Empty>Run the interleaver test to see whether any geometry improves the decoder measurably.</Empty>}
+          ) : (
+            <div className="col" style={{ gap: 10, alignItems: "center", padding: "16px 0" }}>
+              <Empty>Test not run</Empty>
+              <button className="tiny" disabled={!analysisId || busy !== null} onClick={runInter}>
+                {busy === "inter" ? "testing…" : "test interleaver hypotheses"}
+              </button>
+            </div>
+          )}
         </Card>
       </div>
 
