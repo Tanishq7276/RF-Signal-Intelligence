@@ -1,4 +1,13 @@
 /** Typed API client.  Every call goes to the FastAPI backend with the session header. */
+export const API_BASE = (import.meta.env?.VITE_API_URL as string | undefined)?.replace(/\/+$/, "") || "";
+
+export const apiUrl = (path: string): string => {
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  if (!API_BASE) return path;
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE}${cleanPath}`;
+};
+
 export const SESSION_KEY = (() => {
   const k = "sih26147-session";
   let v = localStorage.getItem(k);
@@ -31,7 +40,8 @@ const headers = (): Record<string, string> => {
 };
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
+  const url = apiUrl(path);
+  const res = await fetch(url, {
     ...init,
     headers: { ...headers(), ...(init?.body && !(init.body instanceof FormData) ? { "Content-Type": "application/json" } : {}), ...(init?.headers || {}) },
   });
@@ -92,7 +102,7 @@ export const Api = {
       const fd = new FormData();
       fd.append("file", file);
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/api/upload");
+      xhr.open("POST", apiUrl("/api/upload"));
       const h = headers();
       Object.entries(h).forEach(([k, v]) => xhr.setRequestHeader(k, v));
       xhr.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(e.loaded / e.total); };
@@ -105,7 +115,7 @@ export const Api = {
       xhr.onerror = () => reject(new ApiError(0, "network error during upload"));
       xhr.send(fd);
     }),
-  downloadUrl: (id: string) => `/api/files/${id}/download?x-session-id=${SESSION_KEY}`,
+  downloadUrl: (id: string) => apiUrl(`/api/files/${id}/download?x-session-id=${SESSION_KEY}`),
   // analysis
   analyze: (body: any) => post<any>("/api/analyze", body),
   blind: (body: any) => post<any>("/api/blind-analysis", body),
@@ -145,8 +155,8 @@ export const Api = {
   getBenchmark: (id: string) => req<any>(`/api/benchmarks/${id}`),
   makeReport: (id: string, formats: string[]) => post<any>(`/api/analysis/${id}/report`, { formats }),
   reports: () => req<any>("/api/reports"),
-  reportDownloadUrl: (id: string) => `/api/report/${id}/download?x-session-id=${SESSION_KEY}`,
-  reportInlineUrl: (id: string, format: string) => `/api/analysis/${id}/report?format=${format}&x-session-id=${SESSION_KEY}`,
+  reportDownloadUrl: (id: string) => apiUrl(`/api/report/${id}/download?x-session-id=${SESSION_KEY}`),
+  reportInlineUrl: (id: string, format: string) => apiUrl(`/api/analysis/${id}/report?format=${format}&x-session-id=${SESSION_KEY}`),
 };
 
 /** Poll a background job until it finishes (or the caller unmounts). */

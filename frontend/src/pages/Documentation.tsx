@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Api } from "../lib/api";
+import { Api, apiUrl } from "../lib/api";
 import { Markdown, fetchDocs } from "../lib/md";
 import { Alert, Card, Empty, KV, Spinner } from "../components/ui";
 
@@ -17,7 +17,7 @@ export default function Documentation() {
       setCurrent(index?.documents?.[0]?.name ?? null);
       setLoading(false);
     });
-    fetch("/openapi.json").then((r) => (r.ok ? r.json() : null)).then(setOnline).catch(() => undefined);
+    fetch(apiUrl("/openapi.json")).then((r) => (r.ok ? r.json() : null)).then(setOnline).catch(() => undefined);
   }, []);
 
   const list: any[] = docs?.documents || [];
@@ -26,9 +26,9 @@ export default function Documentation() {
     <div>
       <Card title="Documentation" sub="the same markdown files that live in the repository (docs/), served by the API so the in-app text and the repository text can never drift apart">
         <div className="row" style={{ gap: 8 }}>
-          <a className="btn" href="/docs" target="_blank" rel="noreferrer">Swagger UI</a>
-          <a className="btn" href="/redoc" target="_blank" rel="noreferrer">ReDoc</a>
-          <a className="btn" href="/openapi.json" target="_blank" rel="noreferrer">OpenAPI JSON</a>
+          <a className="btn" href={apiUrl("/docs")} target="_blank" rel="noreferrer">Swagger UI</a>
+          <a className="btn" href={apiUrl("/redoc")} target="_blank" rel="noreferrer">ReDoc</a>
+          <a className="btn" href={apiUrl("/openapi.json")} target="_blank" rel="noreferrer">OpenAPI JSON</a>
           <span className="pill">{online?.paths ? `${Object.keys(online.paths).length} documented paths` : "API schema not reachable"}</span>
           <span style={{ flex: 1 }} />
           <button className="tiny ghost" onClick={() => Api.stats().then(setOnline).catch(() => undefined)}>refresh</button>

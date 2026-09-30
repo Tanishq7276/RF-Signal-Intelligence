@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: rf-signal-intelligence-api
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: SIH_CORS_ORIGINS
+        value: "https://rf-signal-intelligence.vercel.app,http://localhost:5173"
+      - key: SIH_DATA_DIR
+        value: "/tmp/sih-data"

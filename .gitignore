@@ -30,3 +30,5 @@ client_secrets.json
 tmp_*.py
 scratch/
 
+.vercel
+.env*
