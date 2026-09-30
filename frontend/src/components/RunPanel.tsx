@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { Api } from "../lib/api";
 import { bytes, si } from "../lib/format";
 import { useStore } from "../lib/store";
@@ -31,7 +32,7 @@ export default function RunPanel({ blind = false, options, setOptions, fileId, s
   blind?: boolean; options?: RunOptions; setOptions?: (o: RunOptions) => void;
   fileId?: string | null; setFileId?: (id: string | null) => void; compact?: boolean;
 }) {
-  const { files, demos, refresh, toast, runAnalysis, demoLoad, analyses } = useStore();
+  const { files, demos, refresh, toast, runAnalysis, demoLoad, analyses, health } = useStore();
   const [internalFile, setInternalFile] = useState<string | null>(fileId ?? null);
   const [internalOpts, setInternalOpts] = useState<RunOptions>({ ...DEFAULTS, blind });
   const [uploadPct, setUploadPct] = useState<number | null>(null);
@@ -59,12 +60,17 @@ export default function RunPanel({ blind = false, options, setOptions, fileId, s
         (res.file.sample_rate ? ` · ${si(res.file.sample_rate, "Hz", 0)} sample rate from file metadata` :
           " · sample rate unknown (will be estimated)"), "ok", "Upload");
     } catch (e: any) {
-      toast(`upload refused: ${e.message}`, "err", "Upload");
+      const isNetwork = e.status === 0 || e.message?.includes("network error") || e.message?.includes("Failed to fetch");
+      const msg = isNetwork
+        ? `Upload failed: Backend API is not reachable. Please connect your backend in the Settings page or via VITE_API_URL.`
+        : `Upload refused: ${e.message || "Invalid file format or server error"}`;
+      toast(msg, "err", "Upload");
     } finally { setUploadPct(null); }
   };
 
   const selected = files.find((f) => f.file_id === sel);
   const canRun = !!sel && !opts.blind ? true : !!sel;
+  const isBackendOffline = health && health.status !== "ok";
 
   return (
     <Card
@@ -74,6 +80,12 @@ export default function RunPanel({ blind = false, options, setOptions, fileId, s
         : "Upload an .iq / .wav / complex-IQ capture, load one of the shipped demo signals, or pick a file already in this session."}
       right={<button className="tiny ghost" onClick={refresh}>refresh files</button>}
     >
+      {isBackendOffline && (
+        <Alert kind="warn" title="Backend API not connected">
+          The DSP analysis engine is currently unreachable from this browser session. To upload and analyze recordings, please configure your backend URL in <Link to="/settings" style={{ color: "#7cb3ff", fontWeight: "bold" }}>Settings → Backend API Server Connection</Link>.
+        </Alert>
+      )}
+
       <div
         className={`drop ${over ? "hot" : ""}`}
         onDragOver={(e) => { e.preventDefault(); setOver(true); }}
